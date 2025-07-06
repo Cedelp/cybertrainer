@@ -7,14 +7,14 @@ from core.simulador import simular_ataque
 
 class SimuladorViewFrame(tk.Frame):
     def __init__(self, parent, controller):
-        super().__init__(parent)
-        label = tk.Label(self, text="Simulador de Ataques", font=("Arial", 18))
+        super().__init__(parent, bg=parent.cget("bg"))
+        label = tk.Label(self, text="Simulador de Ataques", font=("Arial", 18), bg=self.cget("bg"))
         label.pack(pady=10)
 
-        options_frame = tk.Frame(self)
+        options_frame = tk.Frame(self, bg=self.cget("bg"))
         options_frame.pack(pady=5)
 
-        tk.Label(options_frame, text="Tipo de ataque:").pack(side="left", padx=5)
+        tk.Label(options_frame, text="Tipo de ataque:", bg=self.cget("bg")).pack(side="left", padx=5)
 
         self.ataques_disponibles = ["Escaneo SYN", "Flood UDP", "Spoofing ARP"]
         self.ataque_var = tk.StringVar()
@@ -25,7 +25,7 @@ class SimuladorViewFrame(tk.Frame):
         self.boton_simular = tk.Button(self, text="Ejecutar ataque", command=self.ejecutar_ataque)
         self.boton_simular.pack(pady=10)
 
-        self.status = tk.Label(self, text="", fg="green")
+        self.status = tk.Label(self, text="", fg="green", bg=self.cget("bg"))
         self.status.pack()
 
     def ejecutar_ataque(self):
