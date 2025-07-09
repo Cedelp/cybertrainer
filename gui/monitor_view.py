@@ -25,9 +25,8 @@ class MonitorViewFrame(tk.Frame):
             controller (App): La instancia de la aplicación principal, usada para
                               acceder a estado global como la interfaz activa.
         """
-        super().__init__(parent)
-        self.controller = controller
-        self.configure(bg="#f0f0f0")
+        super().__init__(parent, bg="#e8f4f8")
+        self.controller = controller # Mantener referencia al controlador
 
         # --- Diccionario de información educativa ---
         self.info_educativa = {
@@ -166,44 +165,40 @@ class MonitorViewFrame(tk.Frame):
         para asegurar que todos los controles sean visibles incluso si la ventana
         es muy pequeña.
         """
-        # Contenedor principal para el canvas y la scrollbar
-        container = tk.Frame(self, bg="#e0e0e0")
-        # --- Título y selección de interfaz ---
-        tk.Label(container, text="Monitor de Red", font=("Arial", 16, "bold"), bg=container.cget("bg"), anchor="center", justify="center").pack(pady=10, fill="x")
+        container = tk.Frame(self, bg=self.cget("bg"))
+        tk.Label(container, text="Monitor de Red", font=("Arial", 22, "bold"), bg=self.cget("bg"), fg="#2c3e50").pack(pady=(10, 15))
+
         if_frame = tk.Frame(container, bg=container.cget("bg"))
-        if_frame.pack(fill="x", pady=5)
+        if_frame.pack(fill="x", pady=5, padx=8)
         tk.Label(if_frame, text="Interfaz:", bg=container.cget("bg")).pack(side="left")
         self.iface_var = tk.StringVar()
         self.iface_combo = ttk.Combobox(if_frame, textvariable=self.iface_var, state="readonly", width=25)
         self.iface_combo.pack(side="left", expand=True, fill="x", padx=(5, 0))
 
-        # --- Botones de captura debajo de la selección de interfaz ---
-        self.btn_start = tk.Button(container, text="Iniciar Captura", command=self.iniciar_captura)
-        self.btn_start.pack(fill="x", padx=5, pady=(8,2))
-        self.btn_stop = tk.Button(container, text="Detener Captura", command=self.detener_captura, state="disabled")
-        self.btn_stop.pack(fill="x", padx=5, pady=(0,8))
+        self.btn_start = tk.Button(container, text="Iniciar Captura", command=self.iniciar_captura, bg="#27ae60", fg="white", relief="ridge", bd=1, font=("Arial", 10, "bold"))
+        self.btn_start.pack(fill="x", padx=8, pady=(8,2))
+        self.btn_stop = tk.Button(container, text="Detener Captura", command=self.detener_captura, state="disabled", bg="#f0f0f0", fg="#a0a0a0", relief="ridge", bd=1, font=("Arial", 10, "bold"))
+        self.btn_stop.pack(fill="x", padx=8, pady=(0,8))
 
-        # --- Botones de exportar/importar uno debajo del otro, mismo estilo, justo después de detener captura ---
         btn_export = tk.Button(
-            container, text="Exportar paquetes", command=self._exportar_paquetes
+            container, text="Exportar paquetes", command=self._exportar_paquetes, relief="ridge", bd=1
         )
-        btn_export.pack(fill="x", padx=5, pady=(0, 4))
+        btn_export.pack(fill="x", padx=8, pady=(0, 4))
         btn_import = tk.Button(
-            container, text="Importar paquetes", command=self._importar_paquetes
+            container, text="Importar paquetes", command=self._importar_paquetes, relief="ridge", bd=1
         )
-        btn_import.pack(fill="x", padx=5, pady=(0, 10))
+        btn_import.pack(fill="x", padx=8, pady=(0, 10))
 
         # --- Separador y sección de guías rápidas ---
         ttk.Separator(container, orient="horizontal").pack(fill="x", pady=(2, 6))
 
-        # Guías rápidas (estilo sección de ataques)
-        tk.Label(container, text="Guías rápidas", font=("Arial", 11, "bold"), bg="#e0e0e0", fg="black", anchor="center", justify="center").pack(padx=8, pady=(2, 2), fill="x")
+        tk.Label(container, text="Guías Rápidas", font=("Arial", 12, "bold"), bg=self.cget("bg"), fg="#34495e").pack(pady=(8, 5))
         for titulo in self.info_educativa.keys():
             frame_info = tk.Frame(container, bg=container.cget("bg"))
             frame_info.pack(fill="x", pady=2, padx=8)
             btn_details = tk.Button(frame_info, text="Ver Guía",
                                     command=lambda t=titulo: self._mostrar_info_educativa_en_pestana(t),
-                                    font=("Arial", 10, "bold"))
+                                    relief="ridge", bd=1, bg="#ecf0f1")
             btn_details.pack(side="right", padx=4)
             tk.Label(frame_info, text=f"{titulo}", font=("Arial", 9, "bold"), bg=container.cget("bg"), anchor="w").pack(side="left", anchor="w")
         # Cargar interfaces al iniciar
@@ -304,7 +299,7 @@ class MonitorViewFrame(tk.Frame):
         Returns:
             tk.Frame: El frame que contiene el Treeview y sus scrollbars.
         """
-        list_panel = tk.Frame(self, bg="#f0f0f0")
+        list_panel = tk.Frame(self, bg=self.cget("bg"))
         list_panel.grid_rowconfigure(1, weight=1)
         list_panel.grid_columnconfigure(0, weight=1)
 
@@ -345,7 +340,7 @@ class MonitorViewFrame(tk.Frame):
         - Detalles del Paquete
         - Guías rápidas (una pestaña por cada guía)
         """
-        notebook_panel = tk.Frame(self, bg="#f0f0f0")
+        notebook_panel = tk.Frame(self, bg=self.cget("bg"))
         notebook_panel.rowconfigure(0, weight=1)
         notebook_panel.columnconfigure(0, weight=1)
         self.notebook = ttk.Notebook(notebook_panel)
@@ -422,7 +417,7 @@ class MonitorViewFrame(tk.Frame):
         self.captor.start()
 
         self.btn_start.config(state="disabled")
-        self.btn_stop.config(state="normal")
+        self.btn_stop.config(state="normal", bg="#c0392b", fg="white")
         self.iface_combo.config(state="disabled")
         
         # Iniciar el bucle de procesamiento de la cola
@@ -445,7 +440,7 @@ class MonitorViewFrame(tk.Frame):
             self.update_job = None
 
         self.btn_start.config(state="normal")
-        self.btn_stop.config(state="disabled")
+        self.btn_stop.config(state="disabled", bg="#f0f0f0", fg="#a0a0a0")
         self.iface_combo.config(state="readonly")
 
     def _agregar_paquete(self, packet):

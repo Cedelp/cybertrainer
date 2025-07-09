@@ -38,9 +38,8 @@ class SimuladorViewFrame(tk.Frame):
             controller (App): La instancia de la aplicación principal, usada para
                               acceder a estado global como la interfaz activa.
         """
-        super().__init__(parent)
-        self.controller = controller
-        self.configure(bg="#f0f0f0")
+        super().__init__(parent, bg="#e8f4f8")
+        self.controller = controller # Mantener referencia al controlador
 
         # --- Variables de estado ---
         self.captor = None  # Instancia de PacketCaptor para la captura en vivo.
@@ -50,7 +49,8 @@ class SimuladorViewFrame(tk.Frame):
         self.attack_thread = None  # Hilo para ejecutar la simulación de ataque.
         self.stop_attack_event = threading.Event()  # Evento para detener el ataque.
         self.attack_buttons = []  # Lista para gestionar el estado de los botones de ataque.
-        self.FAKE_TARGET_IP = "192.168.1.100"  # IP ficticia para el objetivo de los ataques.
+        # Usar la IP local del usuario para una simulación más realista.
+        self.target_ip_for_simulation = self.controller.local_ip if self.controller.local_ip else "127.0.0.1"
         self.iface_var = tk.StringVar()  # Variable para el ComboBox de interfaces.
         self.autoscroll_var = tk.BooleanVar(value=True)  # Variable para el Checkbutton de auto-scroll.
 
@@ -147,38 +147,38 @@ class SimuladorViewFrame(tk.Frame):
         Todo está dentro de un Canvas con Scrollbar para ser usable en pantallas pequeñas.
         """
         # Panel de controles compacto, sin scroll
-        container = tk.Frame(self, bg="#e0e0e0")
+        container = tk.Frame(self, bg=self.cget("bg"))
 
         # --- Título ---
-        tk.Label(container, text="Simulador de Ataques", font=("Arial", 15, "bold"), bg=container.cget("bg"), padx=8, anchor="center", justify="center").pack(pady=(10, 6), fill="x")
+        tk.Label(container, text="Simulador de Ataques", font=("Arial", 22, "bold"), bg=self.cget("bg"), fg="#2c3e50").pack(pady=(10, 15))
 
         ttk.Separator(container, orient="horizontal").pack(fill="x", pady=(6, 8))
 
         # Lanzar Simulación
-        tk.Label(container, text="Lanzar Simulación", font=("Arial", 11, "bold"), bg=container.cget("bg")).pack(pady=(8, 3))
+        tk.Label(container, text="Lanzar Simulación", font=("Arial", 12, "bold"), bg=self.cget("bg"), fg="#34495e").pack(pady=(8, 5))
         ataques = ["Escaneo SYN", "Flood UDP", "Spoofing ARP", "DDoS Simulado"]
         for ataque in ataques:
-            btn = tk.Button(container, text=ataque, command=lambda a=ataque: self._iniciar_ataque_en_hilo(a))
+            btn = tk.Button(container, text=ataque, command=lambda a=ataque: self._iniciar_ataque_en_hilo(a), relief="ridge", bd=1, bg="#ffffff")
             btn.pack(fill="x", pady=2, padx=8)
             self.attack_buttons.append(btn)
 
-        self.btn_stop_attack = tk.Button(container, text="Detener Ataque", command=self._detener_ataque_actual, state="disabled")
+        self.btn_stop_attack = tk.Button(container, text="Detener Ataque", command=self._detener_ataque_actual, state="disabled", bg="#f0f0f0", fg="#a0a0a0", relief="ridge", bd=1, font=("Arial", 10, "bold"))
         self.btn_stop_attack.pack(fill="x", pady=(7, 4), padx=8)
 
         ttk.Separator(container, orient="horizontal").pack(fill="x", pady=(10, 8))
 
         # Captura Real
-        tk.Label(container, text="Captura en Vivo", font=("Arial", 11, "bold"), bg=container.cget("bg"), anchor="center", justify="center").pack(padx=8, fill="x")
+        tk.Label(container, text="Captura en Vivo", font=("Arial", 12, "bold"), bg=self.cget("bg"), fg="#34495e").pack(padx=8, fill="x")
 
         if_frame = tk.Frame(container, bg=container.cget("bg"))
         if_frame.pack(fill="x", pady=3, padx=8)
         tk.Label(if_frame, text="Interfaz:", bg=container.cget("bg")).pack(side="left")
-        self.iface_combo = ttk.Combobox(if_frame, textvariable=self.iface_var, state="readonly", width=30)
+        self.iface_combo = ttk.Combobox(if_frame, textvariable=self.iface_var, state="readonly")
         self.iface_combo.pack(side="left", expand=True, fill="x")
 
-        self.btn_start_capture = tk.Button(container, text="Iniciar Captura Real", command=self.iniciar_captura_real)
+        self.btn_start_capture = tk.Button(container, text="Iniciar Captura Real", command=self.iniciar_captura_real, bg="#27ae60", fg="white", relief="ridge", bd=1, font=("Arial", 10, "bold"))
         self.btn_start_capture.pack(fill="x", pady=2, padx=8)
-        self.btn_stop_capture = tk.Button(container, text="Detener Captura Real", command=self.detener_captura_real, state="disabled")
+        self.btn_stop_capture = tk.Button(container, text="Detener Captura Real", command=self.detener_captura_real, state="disabled", bg="#f0f0f0", fg="#a0a0a0", relief="ridge", bd=1, font=("Arial", 10, "bold"))
         self.btn_stop_capture.pack(fill="x", pady=2, padx=8)
 
         autoscroll_check = tk.Checkbutton(container, text="Auto-scroll en vivo", variable=self.autoscroll_var, bg=container.cget("bg"), anchor="w")
@@ -187,12 +187,11 @@ class SimuladorViewFrame(tk.Frame):
         ttk.Separator(container, orient="horizontal").pack(fill="x", pady=(10, 8))
 
         # Información de Ataques
-        tk.Label(container, text="Información de Ataques", font=("Arial", 11, "bold"), bg=container.cget("bg"), anchor="center", justify="center").pack(padx=8, pady=(2, 2), fill="x")
+        tk.Label(container, text="Información de Ataques", font=("Arial", 12, "bold"), bg=self.cget("bg"), fg="#34495e").pack(padx=8, pady=(2, 2), fill="x")
         for ataque in self.attack_info.keys():
             frame_info = tk.Frame(container, bg=container.cget("bg"))
             frame_info.pack(fill="x", pady=2, padx=8)
-            btn_details = tk.Button(frame_info, text="Ver Detalles",
-                                    command=lambda a=ataque: self._mostrar_info_ataque(a))
+            btn_details = tk.Button(frame_info, text="Ver Detalles", command=lambda a=ataque: self._mostrar_info_ataque(a), relief="ridge", bd=1, bg="#ecf0f1")
             btn_details.pack(side="right", padx=4)
             tk.Label(frame_info, text=f"{ataque}", font=("Arial", 9, "bold"), bg=container.cget("bg")).pack(side="left", anchor="w")
 
@@ -206,7 +205,7 @@ class SimuladorViewFrame(tk.Frame):
         Define las columnas, configura un tag 'attack' para resaltar filas,
         y añade las scrollbars.
         """
-        list_panel = tk.Frame(self, bg="#f0f0f0")
+        list_panel = tk.Frame(self, bg=self.cget("bg"))
         list_panel.grid_rowconfigure(0, weight=1)
         list_panel.grid_columnconfigure(0, weight=1)
 
@@ -245,7 +244,7 @@ class SimuladorViewFrame(tk.Frame):
         1. "Detalles del Paquete": Muestra el desglose completo del paquete seleccionado.
         2. "Log de Simulación": Muestra mensajes sobre el progreso de los ataques.
         """
-        notebook_panel = tk.Frame(self, bg="#f0f0f0")
+        notebook_panel = tk.Frame(self, bg=self.cget("bg"))
         self.notebook = ttk.Notebook(notebook_panel)
         self.notebook.pack(fill="both", expand=True, pady=(5,0))
 
@@ -335,7 +334,7 @@ class SimuladorViewFrame(tk.Frame):
         self._log_to_gui(f"Captura real iniciada en {iface}\n")
 
         self.btn_start_capture.config(state="disabled")
-        self.btn_stop_capture.config(state="normal")
+        self.btn_stop_capture.config(state="normal", bg="#c0392b", fg="white")
         self.iface_combo.config(state="disabled")
         
         # Asegurarse de que el bucle de procesamiento de la cola esté corriendo.
@@ -361,7 +360,7 @@ class SimuladorViewFrame(tk.Frame):
             self.update_job = None
 
         self.btn_start_capture.config(state="normal")
-        self.btn_stop_capture.config(state="disabled")
+        self.btn_stop_capture.config(state="disabled", bg="#f0f0f0", fg="#a0a0a0")
         self.iface_combo.config(state="readonly")
 
     def _cargar_interfaces(self):
@@ -441,16 +440,15 @@ class SimuladorViewFrame(tk.Frame):
 
         # --- Lógica para identificar si el paquete es parte de una simulación ---
         # Se usan las constantes importadas de core.simulador para la comprobación.
-        FAKE_ATTACKER_IP = "192.168.200.100" # Debe coincidir con el de core/simulador.py
         is_attack = False
         
         # IP-based attacks from our fake source
-        if packet.haslayer(IP) and packet[IP].src == FAKE_ATTACKER_IP and packet[IP].dst == self.FAKE_TARGET_IP:
+        if packet.haslayer(IP) and packet[IP].src == FAKE_ATTACKER_IP and packet[IP].dst == self.target_ip_for_simulation:
             # Escaneo SYN, Flood UDP o DDoS
             if packet.haslayer(TCP) or packet.haslayer(UDP):
                 is_attack = True
         # ARP-based attack
-        elif packet.haslayer(ARP) and packet[ARP].op == 2 and packet[ARP].pdst == self.FAKE_TARGET_IP:
+        elif packet.haslayer(ARP) and packet[ARP].op == 2 and packet[ARP].pdst == self.target_ip_for_simulation:
             # El ataque ARP Spoof simula venir de una IP de gateway común
             is_attack = True
 
@@ -543,7 +541,7 @@ class SimuladorViewFrame(tk.Frame):
         """
         for btn in self.attack_buttons:
             btn.config(state="normal")
-        self.btn_stop_attack.config(text="Detener Ataque", state="disabled")
+        self.btn_stop_attack.config(text="Detener Ataque", state="disabled", bg="#f0f0f0", fg="#a0a0a0")
 
     def _iniciar_ataque_en_hilo(self, tipo_ataque):
         """
@@ -555,8 +553,13 @@ class SimuladorViewFrame(tk.Frame):
         # Deshabilitar botones para evitar múltiples ataques simultáneos.
         for btn in self.attack_buttons:
             btn.config(state="disabled")
-        self.btn_stop_attack.config(state="normal")
+        self.btn_stop_attack.config(state="normal", bg="#c0392b", fg="white")
         self.stop_attack_event.clear()
+
+        # Limpiar el log de la simulación anterior para una vista limpia.
+        self.log_text.config(state="normal")
+        self.log_text.delete("1.0", tk.END)
+        self.log_text.config(state="disabled")
 
         self._log_to_gui(f"--- Iniciando simulación: {tipo_ataque} ---\n")
 
@@ -578,7 +581,7 @@ class SimuladorViewFrame(tk.Frame):
 
         def attack_wrapper():
             """Ejecuta el ataque y luego resetea los botones de la GUI."""
-            simular_ataque(tipo_ataque, self.FAKE_TARGET_IP, callback, self.stop_attack_event, self._log_to_gui)
+            simular_ataque(tipo_ataque, self.target_ip_for_simulation, callback, self.stop_attack_event, self._log_to_gui)
             self.after(0, self._reset_attack_buttons)
 
         self.attack_thread = threading.Thread(target=attack_wrapper, daemon=True)

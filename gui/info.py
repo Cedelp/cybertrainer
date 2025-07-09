@@ -44,8 +44,12 @@ class InfoAdicionalViewFrame(tk.Frame):
         scrollbar = ttk.Scrollbar(canvas_container, orient="vertical", command=self.canvas.yview)
         scrollable_frame = tk.Frame(self.canvas, bg=self.cget("bg"))
 
+        scroll_window = self.canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+
         scrollable_frame.bind("<Configure>", lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all")))
-        self.canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        # Cuando el canvas cambie de tamaño, forzamos al frame interior a tener el mismo ancho.
+        # Esto es clave para que las tarjetas se redimensionen y el texto se ajuste.
+        self.canvas.bind("<Configure>", lambda e: self.canvas.itemconfig(scroll_window, width=e.width))
         self.canvas.configure(yscrollcommand=scrollbar.set)
 
         self.canvas.pack(side="left", fill="both", expand=True, padx=(0, 10))
@@ -69,7 +73,7 @@ class InfoAdicionalViewFrame(tk.Frame):
 
         self._crear_card(scrollable_frame, "Equipo de Desarrollo", [
             "Carlos Lorenzo - Estudiante de Ingeniería en Sistemas con enfoque en Ciberseguridad. Apasionado por la formación técnica aplicada.",
-            "Sebastian Rodriguez - Estudiante de Ingeniería en Sistemas (NO HIZO NADA).",
+            "Sebastian Rodriguez - Estudiante de Ingeniería en Sistemas con enfoque en Base de Datos.",
             "Fernando Piñango - Estudiante de Ingeniería en Sistemas.",
             "Sebastian Vera - Estudiante de Ingeniería en Sistemas."
         ], is_link=True, link_text="Ver perfil de Carlos Lorenzo en GitHub", link_url="https://github.com/Cedelp")
@@ -98,6 +102,7 @@ class InfoAdicionalViewFrame(tk.Frame):
         items_frame.pack(pady=10, padx=25, fill="both", expand=True)
 
         all_widgets = [card_frame, items_frame]
+        labels_to_wrap = []
         for i, item in enumerate(items):
             if links and i < len(links):
                 link = tk.Label(items_frame, text=item, font=("Arial", 11, "underline"), fg="blue", cursor="hand2", bg="white", anchor="w")
@@ -105,15 +110,32 @@ class InfoAdicionalViewFrame(tk.Frame):
                 link.bind("<Button-1>", lambda e, url=links[i]: webbrowser.open_new(url))
                 all_widgets.append(link)
             else:
-                label = tk.Label(items_frame, text=item, font=("Arial", 11), justify="left", anchor="w", wraplength=700, bg="white", fg="#34495e")
+                # Se establece un wraplength inicial para evitar el "salto" visual al cargar.
+                # El valor de 1 evita el "salto" visual y es corregido inmediatamente
+                # por el evento <Configure> para que se ajuste al ancho de la ventana.
+                label = tk.Label(items_frame, text=item, font=("Arial", 11), justify="left", anchor="w", bg="white", fg="#34495e", wraplength=1)
                 label.pack(pady=4, fill="x")
                 all_widgets.append(label)
+                labels_to_wrap.append(label)
 
         if is_link and link_text and link_url:
             link_label = tk.Label(items_frame, text=link_text, font=("Arial", 11, "underline"), fg="blue", cursor="hand2", bg="white", anchor="w")
             link_label.pack(pady=(10, 4), fill="x")
             link_label.bind("<Button-1>", lambda e, url=link_url: webbrowser.open_new(url))
             all_widgets.append(link_label)
+
+        def update_wraplength(event):
+            # El ancho disponible para el texto es el ancho de la tarjeta menos los paddings.
+            # Padding de items_frame: 25px a cada lado.
+            # Un pequeño margen extra de 10px para seguridad.
+            wrap_width = event.width - (25 * 2) - 10
+            if wrap_width < 1: # Evitar valores negativos o cero
+                wrap_width = 1
+            for label in labels_to_wrap:
+                label.config(wraplength=wrap_width)
+
+        # Vincular el evento al widget correcto: card_frame.
+        card_frame.bind("<Configure>", update_wraplength)
 
         for widget in all_widgets:
             widget.bind("<MouseWheel>", self._on_mousewheel)

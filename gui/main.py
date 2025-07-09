@@ -9,13 +9,14 @@ ventana principal de la aplicación. Es responsable de:
 - Controlar el cambio entre las distintas vistas.
 """
 import threading
-
+from tkinter import messagebox
 import tkinter as tk
 from PIL import Image, ImageTk
 from gui.dashboard import DashboardViewFrame
 from gui.educacion_view import EducacionViewFrame
 from gui.monitor_view import MonitorViewFrame
 from gui.simulador_view import SimuladorViewFrame
+from gui.manual import ManualUsuarioViewFrame
 from gui.info import InfoAdicionalViewFrame
 from core.network_utils import get_active_network_info
 
@@ -108,7 +109,7 @@ class App(tk.Tk):
 
         # Botón para ocultar/mostrar el menú (hamburguesa)
         self.toggle_btn = tk.Button(self.nav_frame, text="☰", command=self.toggle_menu,
-                                    relief="flat", font=("Arial", 12), bg="#2c3e50", fg="white")
+                                    relief="ridge", bd=1, font=("Arial", 12), bg="#2c3e50", fg="white")
         self.toggle_btn.pack(side="top", anchor="ne", pady=5, padx=5)
 
         # Icono encima del título
@@ -138,7 +139,8 @@ class App(tk.Tk):
         # Crear los botones de navegación para cada sección de la aplicación.
         secciones = {
             "Dashboard": "Dashboard",
-            "Documentación": "Docs",
+            "Capacitación": "Docs",
+            "Manual de Usuario": "Manual",
             "Monitor de Red": "Monitor",
             "Simulador de Ataques": "Simulador",
             "Información Adicional": "Info"
@@ -146,11 +148,21 @@ class App(tk.Tk):
         for texto, nombre_frame in secciones.items():
             btn = tk.Button(self.nav_frame, text=texto,
                             command=lambda nf=nombre_frame: self.mostrar_frame(nf),
-                            bg=self.INACTIVE_BTN_COLOR, fg="white", font=("Arial", 12),
-                            relief="flat", anchor="w")
+                            bg=self.INACTIVE_BTN_COLOR, fg="white", font=("Arial", 12), relief="ridge",
+                            bd=1, anchor="w")
             btn.pack(fill="x", padx=10, pady=5)
             self.nav_widgets_to_hide.append(btn)
             self.nav_buttons[nombre_frame] = btn
+
+        # --- Botón de Salir ---
+        # Este botón se empaqueta al final, en la parte inferior del panel.
+        # Se maneja por separado de 'nav_widgets_to_hide' para que pueda tener
+        # un comportamiento de empaquetado y de toggle diferente.
+        self.btn_salir = tk.Button(self.nav_frame, text="Salir",
+                                   command=self._confirmar_salida,
+                                   bg="#c0392b", fg="white", font=("Arial", 12, "bold"), relief="ridge",
+                                   bd=1, padx=10) # padx para el espaciado interno
+        self.btn_salir.pack(side="bottom", pady=(5, 20)) # Centrado por defecto
 
     def toggle_menu(self):
         """
@@ -163,6 +175,7 @@ class App(tk.Tk):
             for widget in self.nav_widgets_to_hide:
                 widget.pack_forget()
             self.nav_frame.config(width=self.COLLAPSED_WIDTH)
+            self.btn_salir.config(text="\u274C", padx=10) # Icono de X, mantenemos padding
             self.menu_expanded = False
         else:
             # Expandir menú
@@ -175,7 +188,13 @@ class App(tk.Tk):
             # El resto de los widgets son los botones de navegación.
             for i in range(3, len(self.nav_widgets_to_hide)):
                 self.nav_widgets_to_hide[i].pack(fill="x", padx=10, pady=5)
+            self.btn_salir.config(text="Salir", padx=10)
             self.menu_expanded = True
+
+    def _confirmar_salida(self):
+        """Muestra un diálogo de confirmación antes de cerrar la aplicación."""
+        if messagebox.askokcancel("Salir", "¿Estás seguro de que quieres salir de CyberTrainer?"):
+            self.destroy()
 
     def _crear_frames(self):
         """
@@ -195,6 +214,7 @@ class App(tk.Tk):
         self.frame_classes = {
             "Dashboard": DashboardViewFrame,
             "Docs": EducacionViewFrame,
+            "Manual": ManualUsuarioViewFrame,
             "Monitor": MonitorViewFrame,
             "Simulador": SimuladorViewFrame,
             "Info": InfoAdicionalViewFrame

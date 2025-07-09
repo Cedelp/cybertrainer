@@ -75,7 +75,8 @@ class DashboardViewFrame(tk.Frame):
                 font=("Arial", 14, "bold"),
                 bg="#2980b9",  # Color activo de la app
                 fg="white",
-                relief="flat",
+                relief="ridge",
+                bd=1,
                 padx=15,
                 pady=8,
                 cursor="hand2",
