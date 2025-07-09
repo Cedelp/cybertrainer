@@ -85,7 +85,19 @@ class DashboardViewFrame(tk.Frame):
             btn_ir_monitor.pack(pady=40)
 
     def _crear_card(self, parent, row, column, titulo, items, columnspan=1):
-        """Crea una tarjeta de información con un estilo consistente."""
+        """
+        Crea y posiciona una tarjeta de información con un estilo consistente.
+
+        Args:
+            parent (tk.Widget): El widget padre donde se colocará la tarjeta (un Frame).
+            row (int): La fila de la grid en el widget padre.
+            column (int): La columna de la grid en el widget padre.
+            titulo (str): El título que se mostrará en la parte superior de la tarjeta.
+            items (list[str]): Una lista de strings, donde cada uno es un punto
+                               a mostrar en la tarjeta.
+            columnspan (int, optional): Cuántas columnas de la grid debe ocupar
+                                        la tarjeta. Defaults to 1.
+        """
         card_frame = tk.Frame(parent, bg="#ffffff", relief="raised", bd=1)
         card_frame.grid(row=row, column=column, columnspan=columnspan, sticky="nsew", padx=15, pady=15)
         card_frame.rowconfigure(2, weight=1) # Permite que el contenido se expanda

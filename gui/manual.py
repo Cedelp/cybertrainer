@@ -93,6 +93,7 @@ class ManualUsuarioViewFrame(tk.Frame):
         ])
 
     def _on_mousewheel(self, event):
+        """Manejador del evento de la rueda del ratón para hacer scroll en el canvas."""
         self.canvas.yview_scroll(-1 * (event.delta // 120), "units")
 
     def _crear_card(self, parent, titulo, items):

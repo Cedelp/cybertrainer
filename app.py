@@ -1,3 +1,14 @@
+"""
+Punto de entrada principal de la aplicación CyberTrainer.
+
+Este script es el responsable de iniciar la aplicación. Realiza las siguientes tareas:
+1.  Verifica si Npcap, una dependencia crítica para la captura de paquetes en
+    Windows, está instalado. Si no lo está, muestra un mensaje de error y sale.
+2.  Define una función para manejar correctamente las rutas a los recursos
+    (como los iconos), asegurando que funcione tanto en un entorno de desarrollo
+    como en el ejecutable final creado por PyInstaller.
+3.  Instancia y lanza la ventana principal de la aplicación (`gui.main.App`).
+"""
 import ctypes
 import sys
 import os
@@ -6,6 +17,15 @@ from tkinter import messagebox
 from gui.main import App
 
 def npcap_instalado():
+    """
+    Verifica si la librería de Npcap (wpcap.dll) está accesible en el sistema.
+
+    Intenta cargar la DLL `wpcap.dll`. Si tiene éxito, significa que Npcap
+    (o su predecesor WinPcap) está instalado y es accesible.
+
+    Returns:
+        bool: True si la DLL se puede cargar, False en caso contrario.
+    """
     try:
         ctypes.windll.LoadLibrary("wpcap.dll")
         return True

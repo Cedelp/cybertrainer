@@ -123,12 +123,27 @@ class EducacionViewFrame(tk.Frame):
             tk.Label(items_frame, text=f"• {p}", font=("Arial", 11), justify="left", anchor="w", wraplength=850, bg="white", fg="#34495e").pack(pady=4, fill="x")
 
     def actualizar_estado(self, nivel):
+        """
+        Marca un nivel como completado y actualiza visualmente su botón.
+
+        Args:
+            nivel (str): El nombre completo del nivel a marcar como completado.
+        """
         self.estado_completado[nivel] = True
         btn = self.boton_widgets[nivel]
         texto_corto = nivel.split(":")[0]
         btn.config(text=f"✅ {texto_corto}", bg='#d4edda', fg="#155724")
 
     def mostrar_nivel(self, nivel_nombre):
+        """
+        Limpia el contenido actual y muestra el contenido de un nivel específico.
+
+        Crea un canvas con scrollbar para albergar el contenido del nivel,
+        que es generado por la función correspondiente (ej. self.nivel_1).
+
+        Args:
+            nivel_nombre (str): El nombre del nivel a mostrar.
+        """
         self.nivel_actual = nivel_nombre
         self._actualizar_botones_activos(nivel_nombre)
         for widget in self.marco_contenido.winfo_children():
@@ -182,6 +197,15 @@ class EducacionViewFrame(tk.Frame):
             widget.bind("<MouseWheel>", self._on_mousewheel)
 
     def insertar_texto(self, parent, titulo, parrafos):
+        """
+        Inserta un bloque de texto con título y viñetas en un frame.
+
+        Args:
+            parent (tk.Widget): El widget padre donde se insertará el texto.
+            titulo (str): El título del bloque de texto.
+            parrafos (list[str]): Una lista de strings, cada uno será un punto
+                                  con una viñeta.
+        """
         # Estilo de título de tarjeta
         tk.Label(parent, text=titulo, font=("Arial", 16, "bold"), bg="white", fg="#2c3e50").pack(pady=(15, 10), padx=25, anchor="w")
         # Separador como en las otras tarjetas
@@ -197,6 +221,16 @@ class EducacionViewFrame(tk.Frame):
             self.labels_to_wrap_educacion.append(label)
 
     def quiz(self, parent, pregunta, opciones, correcta):
+        """
+        Crea un pequeño quiz de opción múltiple dentro de un frame.
+
+        Args:
+            parent (tk.Widget): El widget padre donde se insertará el quiz.
+            pregunta (str): La pregunta del quiz.
+            opciones (list[str]): Una lista de posibles respuestas.
+            correcta (str): La respuesta correcta, que debe estar en la lista
+                            de opciones.
+        """
         # Separador antes del quiz para separarlo del contenido anterior
         ttk.Separator(parent, orient="horizontal").pack(fill="x", padx=25, pady=(20, 10))
 
@@ -227,6 +261,12 @@ class EducacionViewFrame(tk.Frame):
         tk.Button(btn_frame, text="Validar Respuesta", command=validar, bg='#dff0d8', relief="ridge", bd=1).pack()
 
     def completado_btn(self, parent):
+        """
+        Crea un botón para que el usuario marque el nivel actual como completado.
+
+        Args:
+            parent (tk.Widget): El widget padre donde se insertará el botón.
+        """
         def marcar():
             self.actualizar_estado(self.nivel_actual)
             messagebox.showinfo("Nivel completado", "✔️ Este nivel ha sido marcado como completado.")
