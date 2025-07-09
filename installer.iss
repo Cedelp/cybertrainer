@@ -1,27 +1,42 @@
 ; installer.iss - Script para Inno Setup
 
+; --- Definiciones del Preprocesador ---
+; Estas variables se usan para configurar el instalador antes de compilar.
+#define MyAppName "CyberTrainer"
+#define MyAppVersion "1.0"
+; Define un valor por defecto para SourcePath. El script .bat lo sobreescribirá.
+#define SourcePath "."
+
 [Setup]
-AppName=CyberTrainer
-AppVersion=1.0
+AppName={#MyAppName}
+AppVersion={#MyAppVersion}
 PrivilegesRequired=admin
-DefaultDirName={pf}\CyberTrainer
-DefaultGroupName=CyberTrainer
+SetupIconFile="{#SourcePath}\assets\images\app_icon.ico"
+DefaultDirName={pf}\{#MyAppName}
+DefaultGroupName={#MyAppName}
 OutputDir=.
-OutputBaseFilename=CyberTrainerSetup
+OutputBaseFilename="{#MyAppName}Setup-v{#MyAppVersion}"
 
 [Files]
-Source: "dist\app.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "dist\CyberTrainer.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "npcap\npcap-1.82.exe"; DestDir: "{tmp}"; Flags: deleteafterinstall
 
 [Icons]
-Name: "{commondesktop}\Cyber Trainer"; Filename: "{app}\app.exe"
+; Crea un icono en el Menú de Inicio para todos los usuarios
+Name: "{commonprograms}\CyberTrainer"; Filename: "{app}\CyberTrainer.exe"
+; Crea un icono en el Escritorio para todos los usuarios
+Name: "{commondesktop}\CyberTrainer"; Filename: "{app}\CyberTrainer.exe"; Tasks: desktopicon
 
 [Run]
 ; Se instala Npcap de forma silenciosa (/S) asegurando que el modo de compatibilidad
 ; con WinPcap y el adaptador de loopback estén activados. El modo /q es para la versión gratuita.
 Filename: "{tmp}\Npcap-1.82.exe"; Parameters: "/q /winpcap_mode=yes /loopback=yes"; StatusMsg: "Instalando Npcap..."; Flags: waituntilterminated; Check: NeedsNpcap
 
-Filename: "{app}\app.exe"; Description: "Iniciar Cyber Trainer"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\CyberTrainer.exe"; Description: "Iniciar CyberTrainer"; Flags: nowait postinstall skipifsilent
+
+[Tasks]
+; Añade una casilla de verificación en el instalador para que el usuario decida si quiere un icono en el escritorio
+Name: "desktopicon"; Description: "Crear un icono en el escritorio"; GroupDescription: "Accesos directos:";
 
 [Code]
 function NeedsNpcap(): Boolean;

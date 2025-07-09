@@ -10,6 +10,7 @@ ventana principal de la aplicación. Es responsable de:
 """
 
 import tkinter as tk
+from PIL import Image, ImageTk
 from gui.dashboard import DashboardFrame
 from gui.docs_viewer import DocsViewerFrame
 from gui.monitor_view import MonitorViewFrame
@@ -25,7 +26,7 @@ class App(tk.Tk):
     panel de navegación y el frame de contenido donde se muestran las
     diferentes vistas.
     """
-    def __init__(self):
+    def __init__(self, icon_path=None, menu_icon_path=None):
         """
         Inicializa la ventana principal de la aplicación.
 
@@ -33,9 +34,21 @@ class App(tk.Tk):
         Detecta la interfaz de red activa una sola vez al inicio para que
         las demás vistas puedan utilizarla. Llama a los métodos para construir
         el layout y crear los frames de cada sección.
+
+        Args:
+            icon_path (str, optional): Ruta al archivo .ico para el icono de la ventana.
+                                       Defaults to None.
         """
         super().__init__()
         self.title("Capacitación en Ciberseguridad - PYMEs")
+        if icon_path:
+            try:
+                self.iconbitmap(icon_path)
+            except tk.TclError:
+                # Previene un error si el icono no se encuentra o es inválido.
+                print(f"Advertencia: No se pudo cargar el icono desde {icon_path}")
+
+        self.menu_icon_path = menu_icon_path
         self.state('zoomed')  # Abrir siempre maximizado en Windows
 
         # --- Propiedades para el menú de navegación colapsable ---
@@ -69,16 +82,35 @@ class App(tk.Tk):
         self.content_frame = tk.Frame(self, bg="#a7dbd8")
         self.content_frame.pack(side="right", fill="both", expand=True)
 
+
         # Botón para ocultar/mostrar el menú (hamburguesa)
         self.toggle_btn = tk.Button(self.nav_frame, text="☰", command=self.toggle_menu,
                                     relief="flat", font=("Arial", 12), bg="#2c3e50", fg="white")
         self.toggle_btn.pack(side="top", anchor="ne", pady=5, padx=5)
 
+        # Icono encima del título
+
+        try:
+            if self.menu_icon_path:
+                icon_img = Image.open(self.menu_icon_path)
+                icon_img = icon_img.resize((88, 88), Image.LANCZOS)
+                self.menu_icon = ImageTk.PhotoImage(icon_img)
+                icon_label = tk.Label(self.nav_frame, image=self.menu_icon, bg="#2c3e50")
+                icon_label.pack(pady=(16, 0))
+                self.nav_widgets_to_hide.append(icon_label)
+        except Exception as e:
+            print(f"No se pudo cargar el icono del menú: {e}")
+
         # Título en el panel de navegación (centrado)
         title_label = tk.Label(self.nav_frame, text="CyberTrainer",
-                               font=("Arial", 16, "bold"), bg="#2c3e50", fg="white")
-        title_label.pack(pady=10, fill="x")
+                               font=("Arial", 20, "bold"), bg="#2c3e50", fg="white")
+        title_label.pack(pady=8, fill="x")
         self.nav_widgets_to_hide.append(title_label)
+
+        # Espacio extra entre el título y los botones
+        spacer = tk.Frame(self.nav_frame, height=30, bg="#2c3e50")
+        spacer.pack()
+        self.nav_widgets_to_hide.append(spacer)
 
         # Crear los botones de navegación para cada sección de la aplicación.
         secciones = {
@@ -110,10 +142,14 @@ class App(tk.Tk):
         else:
             # Expandir menú
             self.nav_frame.config(width=self.EXPANDED_WIDTH)
-            # Volver a mostrar los widgets en orden
-            self.nav_widgets_to_hide[0].pack(pady=10) # El título
-            for widget in self.nav_widgets_to_hide[1:]: # Los botones
-                widget.pack(fill="x", padx=10, pady=5)
+            # Volver a mostrar los widgets en el orden y con la configuración original.
+            # La lista contiene: [icon_label, title_label, spacer, btn1, btn2, ...]
+            self.nav_widgets_to_hide[0].pack(pady=(10, 0))      # icon_label
+            self.nav_widgets_to_hide[1].pack(pady=5, fill="x")  # title_label
+            self.nav_widgets_to_hide[2].pack()                  # spacer
+            # El resto de los widgets son los botones de navegación.
+            for i in range(3, len(self.nav_widgets_to_hide)):
+                self.nav_widgets_to_hide[i].pack(fill="x", padx=10, pady=5)
             self.menu_expanded = True
 
     def _crear_frames(self):
