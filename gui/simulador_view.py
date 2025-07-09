@@ -309,8 +309,9 @@ class SimuladorViewFrame(tk.Frame):
         - Inicia un `PacketCaptor` en un hilo separado.
         - Actualiza el estado de los botones de la GUI.
         """
+        placeholder = "Seleccione una interfaz de red"
         iface = self.iface_var.get()
-        if not iface or "Cargando" in iface or "Error" in iface:
+        if not iface or iface == placeholder or "Cargando" in iface or "Error" in iface:
             messagebox.showerror("Error de Interfaz", "Por favor, selecciona una interfaz de red válida para la captura.")
             return
 
@@ -373,17 +374,16 @@ class SimuladorViewFrame(tk.Frame):
         principal de la GUI usando `self.after`.
         """
         self.iface_combo['values'] = ["Cargando..."]
+        self.iface_var.set("Cargando...")
         def fetch():
             try:
                 interfaces = get_network_interfaces()
-                active_iface = self.controller.active_interface
                 if interfaces:
                     def update_gui():
-                        self.iface_combo.configure(values=interfaces)
-                        if active_iface and active_iface in interfaces:
-                            self.iface_var.set(active_iface)
-                        elif interfaces:
-                            self.iface_var.set(interfaces[0])
+                        placeholder = "Seleccione una interfaz de red"
+                        full_list = [placeholder] + interfaces
+                        self.iface_combo.configure(values=full_list)
+                        self.iface_var.set(placeholder)
                     self.after(0, update_gui)
                 else:
                     self.after(0, lambda: self.iface_combo.configure(values=["No hay interfaces"]))

@@ -8,14 +8,15 @@ ventana principal de la aplicación. Es responsable de:
 - Instanciar y administrar las diferentes vistas (frames) de la aplicación.
 - Controlar el cambio entre las distintas vistas.
 """
+import threading
 
 import tkinter as tk
 from PIL import Image, ImageTk
-from gui.dashboard import DashboardFrame
-from gui.docs_viewer import DocsViewerFrame
+from gui.dashboard import DashboardViewFrame
+from gui.educacion_view import EducacionViewFrame
 from gui.monitor_view import MonitorViewFrame
 from gui.simulador_view import SimuladorViewFrame
-from gui.info import InfoFrame
+from gui.info import InfoAdicionalViewFrame
 from core.network_utils import get_active_network_info
 
 class App(tk.Tk):
@@ -58,18 +59,40 @@ class App(tk.Tk):
         self.current_frame_name = None
         self.nav_widgets_to_hide = []
 
+        # --- Colores para botones de navegación ---
+        self.ACTIVE_BTN_COLOR = "#2980b9"  # Un azul más brillante para el botón activo
+        self.INACTIVE_BTN_COLOR = "#34495e" # El color original para los inactivos
+
         # --- Estado de la Aplicación ---
         # Detectar la red UNA SOLA VEZ al inicio para evitar llamadas repetidas.
-        # Esta información se pasa a las vistas que la necesiten.
-        self.active_interface, self.local_ip = get_active_network_info()
+        # Se carga en segundo plano para no bloquear la GUI.
+        self.active_interface = None
+        self.local_ip = None
+        self._cargar_info_red_async()
 
         # Diccionario para almacenar las instancias de cada frame (vista).
-        self.frames = {}
+        self.frames = {} # Almacenará las instancias de los frames ya creados
+        self.nav_buttons = {}
 
         # Construir la interfaz gráfica.
         self._crear_layout()
         self._crear_frames()
         self.mostrar_frame("Dashboard")
+
+    def _cargar_info_red_async(self):
+        """
+        Carga la información de la red activa en un hilo separado para no
+        bloquear la GUI al inicio.
+        """
+        def worker():
+            """Función que se ejecuta en el hilo."""
+            try:
+                active_interface, local_ip = get_active_network_info()
+                self.active_interface = active_interface
+                self.local_ip = local_ip
+            except Exception as e:
+                print(f"Error al obtener información de la red: {e}")
+        threading.Thread(target=worker, daemon=True).start()
 
     def _crear_layout(self):
         """Crea la estructura base de la GUI: panel de navegación y área de contenido."""
@@ -123,9 +146,11 @@ class App(tk.Tk):
         for texto, nombre_frame in secciones.items():
             btn = tk.Button(self.nav_frame, text=texto,
                             command=lambda nf=nombre_frame: self.mostrar_frame(nf),
-                            bg="#34495e", fg="white", font=("Arial", 12), relief="flat", anchor="w")
+                            bg=self.INACTIVE_BTN_COLOR, fg="white", font=("Arial", 12),
+                            relief="flat", anchor="w")
             btn.pack(fill="x", padx=10, pady=5)
             self.nav_widgets_to_hide.append(btn)
+            self.nav_buttons[nombre_frame] = btn
 
     def toggle_menu(self):
         """
@@ -161,22 +186,28 @@ class App(tk.Tk):
         a la vez.
         """
         # Un contenedor dentro del content_frame para gestionar los frames apilados.
-        container = tk.Frame(self.content_frame, bg=self.content_frame.cget("bg"))
-        container.pack(side="top", fill="both", expand=True)
-        container.grid_rowconfigure(0, weight=1)
-        container.grid_columnconfigure(0, weight=1)
+        self.container = tk.Frame(self.content_frame, bg=self.content_frame.cget("bg"))
+        self.container.pack(side="top", fill="both", expand=True)
+        self.container.grid_rowconfigure(0, weight=1)
+        self.container.grid_columnconfigure(0, weight=1)
 
-        # Iterar sobre las clases de los frames para crearlos y almacenarlos.
-        for F, name in ((DashboardFrame, "Dashboard"), (DocsViewerFrame, "Docs"),
-                        (MonitorViewFrame, "Monitor"), (SimuladorViewFrame, "Simulador"),
-                        (InfoFrame, "Info")):
-            frame = F(container, self)
-            self.frames[name] = frame
-            frame.grid(row=0, column=0, sticky="nsew")
+        # En lugar de crear los frames, almacenamos sus clases para crearlos "perezosamente".
+        self.frame_classes = {
+            "Dashboard": DashboardViewFrame,
+            "Docs": EducacionViewFrame,
+            "Monitor": MonitorViewFrame,
+            "Simulador": SimuladorViewFrame,
+            "Info": InfoAdicionalViewFrame
+        }
+
+        # Limpiamos el diccionario de instancias. Se llenará bajo demanda.
+        self.frames = {}
+
 
     def mostrar_frame(self, nombre):
         """
-        Muestra el frame solicitado y oculta el anterior.
+        Muestra el frame solicitado, oculta el anterior y actualiza el estado
+        visual de los botones de navegación.
 
         Args:
             nombre (str): El nombre del frame a mostrar (debe ser una clave
@@ -184,13 +215,30 @@ class App(tk.Tk):
         """
         # Lógica de limpieza: si estamos saliendo de la pestaña del simulador,
         # nos aseguramos de que cualquier captura en vivo que estuviera activa se detenga.
-        if self.current_frame_name == "Simulador":
-            sim_frame = self.frames.get("Simulador")
-            if sim_frame and sim_frame.captor:
-                sim_frame.detener_captura_real()
+        if self.current_frame_name: # Evitar en el primer arranque
+            if self.current_frame_name == "Simulador":
+                sim_frame = self.frames.get("Simulador")
+                if sim_frame and sim_frame.captor:
+                    sim_frame.detener_captura_real()
 
-        # Levanta el frame solicitado para que sea visible.
-        frame = self.frames[nombre]
+        # Actualizar el estado de los botones de navegación
+        for frame_name, button in self.nav_buttons.items():
+            if frame_name == nombre:
+                button.config(bg=self.ACTIVE_BTN_COLOR)
+            else:
+                button.config(bg=self.INACTIVE_BTN_COLOR)
+
+        # --- Lógica de Carga Perezosa (Lazy Loading) ---
+        # Busca si el frame ya fue creado.
+        frame = self.frames.get(nombre)
+
+        if frame is None:
+            # Si no existe, lo crea por primera vez.
+            FrameClass = self.frame_classes[nombre]
+            frame = FrameClass(self.container, self)
+            self.frames[nombre] = frame
+            frame.grid(row=0, column=0, sticky="nsew")
+
         frame.tkraise()
         self.current_frame_name = nombre
 
