@@ -1,6 +1,6 @@
 MIT License
 
-Copyright (c) [año] [nombre completo del titular de los derechos de autor]
+Copyright (c) [2025] [CARLOS_LORENZO]
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
