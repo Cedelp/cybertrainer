@@ -59,37 +59,42 @@ class ManualUsuarioViewFrame(tk.Frame):
         self.canvas.bind("<MouseWheel>", self._on_mousewheel)
 
         # --- Contenido del Manual ---
-        self._crear_card(scrollable_frame, "Introducción", [
-            "Bienvenido a CyberTrainer. Esta herramienta está diseñada para ser una plataforma educativa e interactiva, enfocada en capacitar al personal de PYMEs en los fundamentos de la ciberseguridad de redes.",
-            "El objetivo principal es proporcionar un entorno seguro y controlado donde puedas aprender a identificar tráfico de red normal, reconocer anomalías y entender cómo se manifiestan algunos de los ataques más comunes, todo sin poner en riesgo tu red real."
+        self._crear_card(scrollable_frame, "1. Introducción a CyberTrainer", [
+            "Este manual proporciona una guía detallada para el uso de CyberTrainer, una herramienta educativa diseñada para la capacitación en fundamentos de ciberseguridad de redes. El objetivo principal de la aplicación es ofrecer un entorno interactivo y seguro donde los usuarios puedan aprender a monitorear el tráfico de red, identificar anomalías y reconocer patrones de ataques comunes sin ningún riesgo para sus sistemas reales."
         ])
-        self._crear_card(scrollable_frame, "Módulo de Capacitación", [
-            "Esta sección es tu punto de partida teórico. Aquí encontrarás contenido educativo estructurado en cinco niveles progresivos, desde los conceptos más básicos de redes hasta las buenas prácticas de seguridad.",
-            "Navegación: Utiliza los botones en la parte superior ('Nivel 1', 'Nivel 2', etc.) para acceder a cada tema.",
-            "Interactividad: Al final de cada nivel, encontrarás un pequeño desafío para poner a prueba tus conocimientos. También puedes marcar un nivel como 'Completado' para llevar un registro visual de tu progreso."
+        self._crear_card(scrollable_frame, "2. El Dashboard (Pantalla de Inicio)", [
+            "El Dashboard es la primera pantalla que el usuario ve al iniciar la aplicación. Está diseñado para ser un punto de partida claro y orientado a la acción.",
+            "Contiene cuatro tarjetas principales que dirigen a las secciones clave de la aplicación: 'Aprende los Fundamentos' (Capacitación), 'Monitorea tu Red' (Monitor), 'Identifica un Ataque' (Simulador) y 'Consulta el Manual' (esta guía).",
+            "En la parte inferior, se encuentra el panel de 'Información del Sistema', que muestra datos en tiempo real como el estado del driver Npcap, la interfaz de red activa y la dirección IP local del usuario. Esta información es útil para confirmar que la aplicación detecta correctamente el entorno de red."
         ])
-        self._crear_card(scrollable_frame, "Monitor de Red", [
-            "El monitor de red es tu ventana al tráfico que fluye a través de tu dispositivo. Te permite capturar y analizar paquetes en tiempo real.",
-            "1. Selecciona una interfaz: En el panel izquierdo, elige la interfaz de red que deseas monitorear (ej. 'Wi-Fi' o 'Ethernet').",
-            "2. Inicia la captura: Haz clic en 'Iniciar Captura'. Los paquetes que pasen por esa interfaz comenzarán a aparecer en la lista de la derecha.",
-            "3. Analiza los paquetes: La lista superior muestra un resumen de cada paquete. Haz clic en una fila para ver un desglose completo de sus capas y campos en el panel de 'Detalles del Paquete' inferior.",
-            "4. Detén la captura: Cuando termines, haz clic en 'Detener Captura'.",
-            "Funcionalidades extra: Puedes exportar los paquetes capturados a un archivo .pcap para analizarlos más tarde con herramientas como Wireshark, o importar un archivo .pcap existente."
+        self._crear_card(scrollable_frame, "3. Módulo de Capacitación", [
+            "Esta sección es el componente teórico de la aplicación. Presenta contenido educativo estructurado en cinco niveles progresivos.",
+            "Navegación: El usuario puede navegar entre los niveles utilizando los botones en la parte superior ('Nivel 1', 'Nivel 2', etc.).",
+            "Interactividad: Cada nivel concluye con un 'Desafío de Conocimiento', un pequeño quiz para validar la comprensión del tema. Además, el usuario puede presionar el botón 'Marcar como Completado' para llevar un registro visual de su progreso. El botón del nivel correspondiente cambiará para mostrar un ícono de verificación (✅)."
         ])
-        self._crear_card(scrollable_frame, "Simulador de Ataques", [
-            "Esta es la sección más interactiva. Aquí puedes lanzar simulaciones de ataques comunes en un entorno completamente seguro para aprender a identificarlos.",
-            "Uso recomendado: Para una experiencia más realista, primero inicia una captura en vivo y luego lanza el ataque. Así verás los paquetes maliciosos mezclados con tu tráfico normal.",
-            "1. Inicia la captura real: Selecciona una interfaz y haz clic en 'Iniciar Captura Real'.",
-            "2. Lanza un ataque: En el panel izquierdo, haz clic en el botón del ataque que deseas simular (ej. 'Escaneo SYN').",
-            "3. Observa y analiza: Verás cómo aparecen nuevos paquetes en la lista, resaltados en rojo. Estos son los paquetes del ataque. La pestaña 'Log de Simulación' te narrará el progreso del ataque paso a paso.",
-            "4. Detén todo: Puedes detener la simulación con 'Detener Ataque' y la captura general con 'Detener Captura Real'.",
-            "Importante: Las simulaciones son 100% seguras. Los paquetes de ataque se generan y se muestran en la interfaz, pero nunca se envían a tu red real."
+        self._crear_card(scrollable_frame, "4. Monitor de Red", [
+            "El Monitor de Red es una herramienta para la captura y análisis de tráfico en tiempo real. Permite al usuario observar los paquetes que atraviesan una interfaz de red seleccionada.",
+            "Flujo de trabajo:",
+            "1. Selección de Interfaz: En el panel de controles izquierdo, el usuario debe elegir una interfaz de red del menú desplegable (ej. 'Wi-Fi' o 'Ethernet').",
+            "2. Inicio de Captura: Al presionar 'Iniciar Captura', la aplicación comienza a escuchar en la interfaz seleccionada. Los paquetes capturados aparecen en la lista de la derecha.",
+            "3. Análisis de Paquetes: La lista superior muestra un resumen de cada paquete (origen, destino, protocolo, etc.). Al hacer clic en una fila, el panel inferior 'Detalles del Paquete' muestra un desglose completo de las capas y campos de dicho paquete.",
+            "4. Detención de Captura: El proceso se detiene al presionar 'Detener Captura'.",
+            "Funcionalidades Adicionales: El usuario puede exportar la sesión de captura a un archivo .pcap para un análisis posterior en herramientas como Wireshark, o importar un archivo .pcap para analizarlo dentro de CyberTrainer."
         ])
-        self._crear_card(scrollable_frame, "Solución de Problemas", [
-            "Si la aplicación muestra un error de 'Npcap no encontrado' al iniciar: Debes instalar Npcap desde su sitio web oficial (nmap.org/npcap). Durante la instalación, es crucial que marques la casilla 'Install Npcap in WinPcap API-compatible Mode'.",
-            "Si no se detectan interfaces de red en los menús desplegables: Esto generalmente se debe a una instalación incorrecta de Npcap o a problemas con los drivers. Intenta reinstalar Npcap asegurándote de marcar la opción de compatibilidad.",
-            "La aplicación se inicia lentamente: Es normal que la aplicación tarde unos segundos en arrancar. Durante este tiempo, está detectando la configuración de tu red para funcionar correctamente.",
-            "La interfaz se siente lenta durante la captura: La captura de paquetes en tiempo real consume recursos. Si la aplicación no responde fluidamente, prueba deteniendo la captura mientras no estés analizando activamente el tráfico."
+        self._crear_card(scrollable_frame, "5. Simulador de Ataques", [
+            "Esta es la sección más interactiva, donde el usuario puede lanzar simulaciones de ataques para aprender a identificarlos en un entorno controlado.",
+            "Concepto de Seguridad: Es fundamental entender que las simulaciones son 100% seguras. Los paquetes de ataque se generan y se muestran únicamente dentro de la interfaz de la aplicación; nunca se envían a la red real.",
+            "Flujo de trabajo recomendado:",
+            "1. Iniciar Captura Real: Para una experiencia de aprendizaje óptima, se recomienda primero iniciar una captura en vivo. Esto permite ver los paquetes de ataque mezclados con el tráfico de red normal.",
+            "2. Lanzar un Ataque: En el panel izquierdo, el usuario selecciona y presiona el botón del ataque que desea simular (ej. 'Escaneo SYN').",
+            "3. Observar y Analizar: En la lista de paquetes, aparecerán nuevas entradas resaltadas en color rojo. Estos son los paquetes del ataque simulado. La pestaña 'Log de Simulación' en el panel inferior narra el progreso del ataque en tiempo real, explicando cada paso.",
+            "4. Detener Procesos: El usuario puede detener la simulación en cualquier momento con el botón 'Detener Ataque' y la captura general con 'Detener Captura Real'."
+        ])
+        self._crear_card(scrollable_frame, "6. Solución de Problemas Comunes", [
+            "Error 'Npcap no encontrado' al iniciar: Este error indica que falta el driver de captura de paquetes. La solución es descargar e instalar Npcap desde su sitio web oficial (nmap.org/npcap). Durante la instalación, es crucial marcar la casilla 'Install Npcap in WinPcap API-compatible Mode'.",
+            "No se detectan interfaces de red: Si los menús desplegables de interfaces aparecen vacíos o con un error, generalmente se debe a una instalación incorrecta de Npcap. Se recomienda reinstalarlo, asegurando que la opción de compatibilidad esté activada.",
+            "La aplicación se inicia lentamente: Es un comportamiento normal. Al arrancar, CyberTrainer realiza una comprobación del sistema y detecta la configuración de red, lo que puede tomar unos segundos.",
+            "La interfaz se vuelve lenta durante la captura: La captura de paquetes en tiempo real consume recursos del sistema. Si la aplicación no responde con fluidez, se recomienda detener la captura mientras no se esté analizando activamente el tráfico."
         ])
 
     def _on_mousewheel(self, event):

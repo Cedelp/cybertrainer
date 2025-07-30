@@ -57,8 +57,8 @@ class App(tk.Tk):
         self.EXPANDED_WIDTH = 200
         self.COLLAPSED_WIDTH = 50
         self.menu_expanded = True
-        self.current_frame_name = None
-        self.nav_widgets_to_hide = []
+        self.current_frame_name = None # Para rastrear la vista actual
+        self.expand_only_widgets = [] # Widgets que solo se muestran en modo expandido
 
         # --- Colores para botones de navegación ---
         self.ACTIVE_BTN_COLOR = "#2980b9"  # Un azul más brillante para el botón activo
@@ -71,6 +71,16 @@ class App(tk.Tk):
         self.local_ip = None
         self._cargar_info_red_async()
 
+        # --- Información de Secciones para el Menú ---
+        self.secciones_info = {
+            "Dashboard": {"texto": "Dashboard", "icono": "🏠"},
+            "Docs": {"texto": "Capacitación", "icono": "📚"},
+            "Manual": {"texto": "Manual de Usuario", "icono": "📖"},
+            "Monitor": {"texto": "Monitor de Red", "icono": "📡"},
+            "Simulador": {"texto": "Simulador de Ataques", "icono": "💣"},
+            "Info": {"texto": "Información Adicional", "icono": "ℹ️"}
+        }
+
         # Diccionario para almacenar las instancias de cada frame (vista).
         self.frames = {} # Almacenará las instancias de los frames ya creados
         self.nav_buttons = {}
@@ -79,6 +89,9 @@ class App(tk.Tk):
         self._crear_layout()
         self._crear_frames()
         self.mostrar_frame("Dashboard")
+
+        # Interceptar el evento de cierre de la ventana para mostrar confirmación.
+        self.protocol("WM_DELETE_WINDOW", self._confirmar_salida)
 
     def _cargar_info_red_async(self):
         """
@@ -91,9 +104,25 @@ class App(tk.Tk):
                 active_interface, local_ip = get_active_network_info()
                 self.active_interface = active_interface
                 self.local_ip = local_ip
+                # Programar la actualización de la GUI en el hilo principal.
+                self.after(0, self._update_dashboard_info)
             except Exception as e:
                 print(f"Error al obtener información de la red: {e}")
+                # También actualiza la GUI con un mensaje de error.
+                self.after(0, self._update_dashboard_info_error)
         threading.Thread(target=worker, daemon=True).start()
+
+    def _update_dashboard_info(self):
+        """Actualiza el panel de información del dashboard si ya está creado."""
+        dashboard_frame = self.frames.get("Dashboard")
+        if dashboard_frame:
+            dashboard_frame.update_network_info(self.active_interface, self.local_ip)
+
+    def _update_dashboard_info_error(self):
+        """Actualiza el panel de información del dashboard con un mensaje de error."""
+        dashboard_frame = self.frames.get("Dashboard")
+        if dashboard_frame:
+            dashboard_frame.update_network_info("Error", "No disponible")
 
     def _crear_layout(self):
         """Crea la estructura base de la GUI: panel de navegación y área de contenido."""
@@ -109,8 +138,9 @@ class App(tk.Tk):
 
         # Botón para ocultar/mostrar el menú (hamburguesa)
         self.toggle_btn = tk.Button(self.nav_frame, text="☰", command=self.toggle_menu,
-                                    relief="ridge", bd=1, font=("Arial", 12), bg="#2c3e50", fg="white")
-        self.toggle_btn.pack(side="top", anchor="ne", pady=5, padx=5)
+                                    relief="ridge", bd=1, font=("Arial", 12), bg="#2c3e50", fg="white", anchor="e")
+        # Se usa fill="x", anchor="e" y padx=10 para que sea consistente con los otros botones.
+        self.toggle_btn.pack(side="top", fill="x", pady=5, padx=10)
 
         # Icono encima del título
 
@@ -120,8 +150,8 @@ class App(tk.Tk):
                 icon_img = icon_img.resize((88, 88), Image.LANCZOS)
                 self.menu_icon = ImageTk.PhotoImage(icon_img)
                 icon_label = tk.Label(self.nav_frame, image=self.menu_icon, bg="#2c3e50")
-                icon_label.pack(pady=(16, 0))
-                self.nav_widgets_to_hide.append(icon_label)
+                icon_label.pack(pady=(16, 0)) # Padding superior para el icono
+                self.expand_only_widgets.append(icon_label)
         except Exception as e:
             print(f"No se pudo cargar el icono del menú: {e}")
 
@@ -129,35 +159,23 @@ class App(tk.Tk):
         title_label = tk.Label(self.nav_frame, text="CyberTrainer",
                                font=("Arial", 20, "bold"), bg="#2c3e50", fg="white")
         title_label.pack(pady=8, fill="x")
-        self.nav_widgets_to_hide.append(title_label)
+        self.expand_only_widgets.append(title_label)
 
         # Espacio extra entre el título y los botones
         spacer = tk.Frame(self.nav_frame, height=30, bg="#2c3e50")
         spacer.pack()
-        self.nav_widgets_to_hide.append(spacer)
+        self.expand_only_widgets.append(spacer)
 
         # Crear los botones de navegación para cada sección de la aplicación.
-        secciones = {
-            "Dashboard": "Dashboard",
-            "Capacitación": "Docs",
-            "Manual de Usuario": "Manual",
-            "Monitor de Red": "Monitor",
-            "Simulador de Ataques": "Simulador",
-            "Información Adicional": "Info"
-        }
-        for texto, nombre_frame in secciones.items():
-            btn = tk.Button(self.nav_frame, text=texto,
+        for nombre_frame, info in self.secciones_info.items():
+            btn = tk.Button(self.nav_frame, text=info["texto"],
                             command=lambda nf=nombre_frame: self.mostrar_frame(nf),
                             bg=self.INACTIVE_BTN_COLOR, fg="white", font=("Arial", 12), relief="ridge",
-                            bd=1, anchor="w")
+                            bd=1, anchor="w", padx=10)
             btn.pack(fill="x", padx=10, pady=5)
-            self.nav_widgets_to_hide.append(btn)
             self.nav_buttons[nombre_frame] = btn
 
         # --- Botón de Salir ---
-        # Este botón se empaqueta al final, en la parte inferior del panel.
-        # Se maneja por separado de 'nav_widgets_to_hide' para que pueda tener
-        # un comportamiento de empaquetado y de toggle diferente.
         self.btn_salir = tk.Button(self.nav_frame, text="Salir",
                                    command=self._confirmar_salida,
                                    bg="#c0392b", fg="white", font=("Arial", 12, "bold"), relief="ridge",
@@ -167,28 +185,46 @@ class App(tk.Tk):
     def toggle_menu(self):
         """
         Alterna el estado del menú de navegación entre expandido y colapsado.
-
-        Modifica el ancho del `nav_frame` y oculta o muestra los textos de los botones.
         """
         if self.menu_expanded:
-            # Colapsar menú
-            for widget in self.nav_widgets_to_hide:
+            # --- COLAPSAR MENÚ ---
+            # 1. Ocultar los widgets que solo aparecen en modo expandido.
+            for widget in self.expand_only_widgets:
                 widget.pack_forget()
+
+            # 2. Cambiar el texto de los botones a iconos y centrarlos.
+            for nombre_frame, btn in self.nav_buttons.items():
+                icono = self.secciones_info[nombre_frame]["icono"]
+                btn.config(text=icono, anchor="center")
+
+            # 3. Ajustar el ancho del frame y el botón de salir.
             self.nav_frame.config(width=self.COLLAPSED_WIDTH)
-            self.btn_salir.config(text="\u274C", padx=10) # Icono de X, mantenemos padding
+            self.btn_salir.config(text="\u274C", anchor="center") # También centrar el icono
             self.menu_expanded = False
         else:
-            # Expandir menú
+            # --- EXPANDIR MENÚ ---
             self.nav_frame.config(width=self.EXPANDED_WIDTH)
-            # Volver a mostrar los widgets en el orden y con la configuración original.
-            # La lista contiene: [icon_label, title_label, spacer, btn1, btn2, ...]
-            self.nav_widgets_to_hide[0].pack(pady=(10, 0))      # icon_label
-            self.nav_widgets_to_hide[1].pack(pady=5, fill="x")  # title_label
-            self.nav_widgets_to_hide[2].pack()                  # spacer
-            # El resto de los widgets son los botones de navegación.
-            for i in range(3, len(self.nav_widgets_to_hide)):
-                self.nav_widgets_to_hide[i].pack(fill="x", padx=10, pady=5)
-            self.btn_salir.config(text="Salir", padx=10)
+
+            # Olvidar todos los botones para re-empaquetarlos en el orden correcto
+            for btn in self.nav_buttons.values():
+                btn.pack_forget()
+            self.btn_salir.pack_forget()
+
+            # 1. Re-empaquetar los widgets solo expandidos
+            self.expand_only_widgets[0].pack(pady=(16, 0))      # icon_label
+            self.expand_only_widgets[1].pack(pady=8, fill="x")  # title_label
+            self.expand_only_widgets[2].pack()                  # spacer
+
+            # 2. Re-empaquetar los botones de navegación con su texto y anclaje restaurados
+            for nombre_frame, btn in self.nav_buttons.items():
+                texto = self.secciones_info[nombre_frame]["texto"]
+                btn.config(text=texto, anchor="w") # 'w' for West (izquierda)
+                btn.pack(fill="x", padx=10, pady=5)
+
+            # 3. Re-empaquetar el botón de salir con su texto y anclaje restaurados
+            self.btn_salir.config(text="Salir", anchor="center")
+            self.btn_salir.pack(side="bottom", pady=(5, 20))
+
             self.menu_expanded = True
 
     def _confirmar_salida(self):

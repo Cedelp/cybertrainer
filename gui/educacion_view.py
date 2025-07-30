@@ -70,10 +70,17 @@ class EducacionViewFrame(tk.Frame):
             btn.pack(side=tk.LEFT, padx=4)
             self.boton_widgets[nivel] = btn
 
-        # El marco de contenido ahora es la "tarjeta" principal que albergará el canvas
-        self.marco_contenido = tk.Frame(main_frame, bg="#ffffff", relief="raised", bd=1)
-        self.marco_contenido.pack(expand=True, fill='both', padx=15, pady=10)
+        # Contenedor para el contenido del nivel (scrollable) y las acciones (fijas)
+        content_container = tk.Frame(main_frame, bg=self.cget("bg"))
+        content_container.pack(expand=True, fill='both')
 
+        # El marco de contenido es la "tarjeta" blanca que albergará el canvas scrollable
+        self.marco_contenido = tk.Frame(main_frame, bg="#ffffff", relief="raised", bd=1)
+        self.marco_contenido.pack(in_=content_container, expand=True, fill='both', padx=15, pady=(10,0))
+
+        # Frame para los botones de acción fijos en la parte inferior
+        self.actions_frame = tk.Frame(main_frame, bg=self.cget("bg"))
+        self.actions_frame.pack(in_=content_container, side='bottom', fill='x', pady=10)
         # Mostrar la vista de inicio por defecto
         self.mostrar_inicio()
 
@@ -100,6 +107,11 @@ class EducacionViewFrame(tk.Frame):
         self.nivel_actual = "Inicio"
         self._actualizar_botones_activos("Inicio")
         for widget in self.marco_contenido.winfo_children():
+            widget.destroy()
+
+        # Ocultar y limpiar el frame de acciones en la página de inicio
+        self.actions_frame.pack_forget()
+        for widget in self.actions_frame.winfo_children():
             widget.destroy()
 
         self.current_canvas = None  # No hay canvas en la página de inicio
@@ -149,6 +161,11 @@ class EducacionViewFrame(tk.Frame):
         for widget in self.marco_contenido.winfo_children():
             widget.destroy()
 
+        # Limpiar y mostrar el frame de acciones
+        for widget in self.actions_frame.winfo_children():
+            widget.destroy()
+        self.actions_frame.pack(side='bottom', fill='x', pady=10)
+
         self.labels_to_wrap_educacion = [] # Reiniciar la lista para el nuevo nivel
 
         canvas = tk.Canvas(self.marco_contenido, bg='white', highlightthickness=0)
@@ -181,7 +198,7 @@ class EducacionViewFrame(tk.Frame):
         scrollbar.pack(side='right', fill='y')
 
         # Poblar el frame con el contenido del nivel
-        self.niveles[nivel_nombre](scroll_frame)
+        self.niveles[nivel_nombre](scroll_frame, self.actions_frame)
 
         # --- Bindeo de la rueda del ratón ---
         # Se bindea a todos los widgets dentro del área de scroll para asegurar
@@ -220,7 +237,7 @@ class EducacionViewFrame(tk.Frame):
             label.pack(pady=4, fill="x")
             self.labels_to_wrap_educacion.append(label)
 
-    def quiz(self, parent, pregunta, opciones, correcta):
+    def quiz(self, parent, pregunta, opciones, correcta, completar_callback=None):
         """
         Crea un pequeño quiz de opción múltiple dentro de un frame.
 
@@ -230,23 +247,18 @@ class EducacionViewFrame(tk.Frame):
             opciones (list[str]): Una lista de posibles respuestas.
             correcta (str): La respuesta correcta, que debe estar en la lista
                             de opciones.
+            completar_callback (callable, optional): Función a ejecutar al marcar como completado.
         """
-        # Separador antes del quiz para separarlo del contenido anterior
-        ttk.Separator(parent, orient="horizontal").pack(fill="x", padx=25, pady=(20, 10))
+        quiz_frame = tk.Frame(parent, bg=parent.cget("bg"))
+        quiz_frame.pack(side='left', fill='x', expand=True, padx=20)
 
-        quiz_frame = tk.Frame(parent, bg="white")
-        quiz_frame.pack(fill="x", expand=True, padx=25, pady=10)
-
-        # Título del quiz
         tk.Label(quiz_frame, text="🧠 Desafío de Conocimiento", font=("Arial", 14, "bold"), bg="white", fg="#2c3e50").pack(anchor="w")
-        # Pregunta
         label_pregunta = tk.Label(quiz_frame, text=pregunta, wraplength=1, font=("Arial", 11), bg="white", justify="left", fg="#34495e")
         label_pregunta.pack(anchor="w", pady=(5, 10))
         self.labels_to_wrap_educacion.append(label_pregunta)
 
         respuesta = tk.StringVar()
         for opt in opciones:
-            # Radiobutton con estilo consistente
             tk.Radiobutton(quiz_frame, text=opt, variable=respuesta, value=opt, bg="white", font=("Arial", 11), fg="#34495e", anchor="w",
                            activebackground="white", activeforeground="#2c3e50", selectcolor="#e8f4f8").pack(anchor="w")
 
@@ -257,8 +269,11 @@ class EducacionViewFrame(tk.Frame):
                 messagebox.showerror("Resultado", f"❌ Incorrecto. La respuesta correcta es: {correcta}")
 
         btn_frame = tk.Frame(quiz_frame, bg='white')
-        btn_frame.pack(fill='x', pady=10)
-        tk.Button(btn_frame, text="Validar Respuesta", command=validar, bg='#dff0d8', relief="ridge", bd=1).pack()
+        btn_frame.pack(pady=10)
+        tk.Button(btn_frame, text="Validar Respuesta", command=validar, bg='#dff0d8', relief="ridge", bd=1).pack(side='left', padx=5)
+
+        if completar_callback:
+            tk.Button(btn_frame, text="Marcar como Completado", command=completar_callback, bg='#e6f7ff', relief="ridge", bd=1).pack(side='left', padx=5)
 
     def completado_btn(self, parent):
         """
@@ -270,11 +285,11 @@ class EducacionViewFrame(tk.Frame):
         def marcar():
             self.actualizar_estado(self.nivel_actual)
             messagebox.showinfo("Nivel completado", "✔️ Este nivel ha sido marcado como completado.")
-        comp_frame = tk.Frame(parent, bg='white') # Se coloca en el padre principal (scroll_frame)
-        comp_frame.pack(fill='x', pady=10)
-        tk.Button(comp_frame, text="Marcar como Completado", command=marcar, bg='#e6f7ff', relief="ridge", bd=1).pack()
+        comp_frame = tk.Frame(parent, bg=parent.cget("bg"))
+        comp_frame.pack(side='right', padx=20, pady=10)
+        tk.Button(comp_frame, text="Marcar como Completado", command=marcar, bg='#e6f7ff', relief="ridge", bd=1).pack(side='right')
         
-    def nivel_1(self, frame):
+    def nivel_1(self, frame, actions_frame):
         self.insertar_texto(frame, "¿Qué es una red informática?", [
             "Una red informática es un conjunto de dispositivos interconectados entre sí que pueden comunicarse para compartir datos, servicios y recursos.",
             "Puede ser de tipo LAN (local), MAN (metropolitana), WAN (amplia) o PAN (personal), según el tamaño y la ubicación.",
@@ -291,10 +306,9 @@ class EducacionViewFrame(tk.Frame):
             "UDP: sin conexión, más rápido pero no confiable (streaming, DNS).",
             "ICMP: usado para mensajes de error y diagnóstico (ping)."
         ])
-        self.quiz(frame, "¿Qué protocolo garantiza entrega de datos?", ["UDP", "ARP", "TCP", "ICMP"], "TCP")
-        self.completado_btn(frame)
+        self.quiz(actions_frame, "¿Qué protocolo garantiza entrega de datos?", ["UDP", "ARP", "TCP", "ICMP"], "TCP", completar_callback=lambda: self.actualizar_estado(self.nivel_actual) or messagebox.showinfo("Nivel completado", "✔️ Este nivel ha sido marcado como completado."))
 
-    def nivel_2(self, frame):
+    def nivel_2(self, frame, actions_frame):
         self.insertar_texto(frame, "¿Qué es una anomalía de red?", [
             "Una anomalía de red es un comportamiento inesperado en el tráfico, que puede indicar un problema técnico, una mala configuración o un ataque.",
             "El monitoreo permite detectarlas a tiempo y actuar antes de que causen daño."
@@ -310,10 +324,9 @@ class EducacionViewFrame(tk.Frame):
             "El uso de registros históricos ayuda a reconocer desviaciones.",
             "En CyberTrainer puedes ver ejemplos reales en el módulo de monitoreo."
         ])
-        self.quiz(frame, "¿Cuál de los siguientes sería una posible señal de anomalía?", ["Un archivo .pdf", "Muchos paquetes ICMP en segundos", "Uso bajo del CPU", "Ping exitoso"], "Muchos paquetes ICMP en segundos")
-        self.completado_btn(frame)
+        self.quiz(actions_frame, "¿Cuál de los siguientes sería una posible señal de anomalía?", ["Un archivo .pdf", "Muchos paquetes ICMP en segundos", "Uso bajo del CPU", "Ping exitoso"], "Muchos paquetes ICMP en segundos", completar_callback=lambda: self.actualizar_estado(self.nivel_actual) or messagebox.showinfo("Nivel completado", "✔️ Este nivel ha sido marcado como completado."))
 
-    def nivel_3(self, frame):
+    def nivel_3(self, frame, actions_frame):
         self.insertar_texto(frame, "Tipos de ataques de red (simulados en CyberTrainer):", [
             "🔎 Escaneo SYN: el atacante envía múltiples solicitudes SYN a diferentes puertos para descubrir cuáles están abiertos sin completar el 'handshake' completo.",
             "💧 UDP Flood: bombardeo de paquetes UDP aleatorios para saturar puertos y consumir recursos.",
@@ -327,10 +340,9 @@ class EducacionViewFrame(tk.Frame):
             "- Patrones masivos de tráfico hacia un mismo puerto.",
             "- Fuentes IP múltiples con alto volumen de paquetes."
         ])
-        self.quiz(frame, "¿Qué ataque finge ser otro dispositivo en red?", ["DDoS", "ARP Spoofing", "SYN Scan", "Ninguno"], "ARP Spoofing")
-        self.completado_btn(frame)
+        self.quiz(actions_frame, "¿Qué ataque finge ser otro dispositivo en red?", ["DDoS", "ARP Spoofing", "SYN Scan", "Ninguno"], "ARP Spoofing", completar_callback=lambda: self.actualizar_estado(self.nivel_actual) or messagebox.showinfo("Nivel completado", "✔️ Este nivel ha sido marcado como completado."))
 
-    def nivel_4(self, frame):
+    def nivel_4(self, frame, actions_frame):
         self.insertar_texto(frame, "Interpretación del tráfico de red:", [
             "Cada protocolo tiene características que lo distinguen.",
             "⚙️ TCP: usa banderas SYN, ACK, FIN, RST para establecer, mantener y cerrar una conexión.",
@@ -344,10 +356,9 @@ class EducacionViewFrame(tk.Frame):
             "✔️ Estudiar tráfico normal vs tráfico anómalo.",
             "✔️ Comparar logs de distintas sesiones."
         ])
-        self.quiz(frame, "¿Qué bandera TCP indica inicio de conexión?", ["ACK", "SYN", "RST", "FIN"], "SYN")
-        self.completado_btn(frame)
+        self.quiz(actions_frame, "¿Qué bandera TCP indica inicio de conexión?", ["ACK", "SYN", "RST", "FIN"], "SYN", completar_callback=lambda: self.actualizar_estado(self.nivel_actual) or messagebox.showinfo("Nivel completado", "✔️ Este nivel ha sido marcado como completado."))
 
-    def nivel_5(self, frame):
+    def nivel_5(self, frame, actions_frame):
         self.insertar_texto(frame, "Buenas Prácticas de Seguridad en Redes:", [
             "✅ Mantén tu red segmentada: separa dispositivos por niveles de acceso.",
             "✅ Desactiva servicios innecesarios en routers y servidores.",
@@ -358,5 +369,4 @@ class EducacionViewFrame(tk.Frame):
             "✅ Aplica políticas de mínimo privilegio en usuarios y procesos.",
             "✅ Monitorea constantemente con herramientas como CyberTrainer."
         ])
-        self.quiz(frame, "¿Cuál de estas prácticas mejora la visibilidad de actividad sospechosa?", ["Usar USB", "Revisar logs", "Dejar puertos abiertos", "Compartir Wi-Fi"], "Revisar logs")
-        self.completado_btn(frame)
+        self.quiz(actions_frame, "¿Cuál de estas prácticas mejora la visibilidad de actividad sospechosa?", ["Usar USB", "Revisar logs", "Dejar puertos abiertos", "Compartir Wi-Fi"], "Revisar logs", completar_callback=lambda: self.actualizar_estado(self.nivel_actual) or messagebox.showinfo("Nivel completado", "✔️ Este nivel ha sido marcado como completado."))
